@@ -168,7 +168,7 @@ class connection{
 		}
         void init_s()
         {   
-            cout<<"hello\n";
+            
             fstream s("myport.txt");
             string t;
             s>>t;
@@ -182,6 +182,7 @@ class connection{
                 sockets.push_back(x);
                 size++;
             }
+            cout<<"hello"<<endl;
 
         }
 
@@ -208,17 +209,19 @@ class connection{
         {
             
             std::thread t1(&connection::init_s,this);
-            sleep(1);
+           // sleep(1);
             std::thread t2(&connection::init_c,this);
-            t1.join();
-            t2.join();
-            sleep(10);
+           
+            sleep(2);
+            cout<<"hi"<<endl;
             std::vector<thread> threads;
             for (int i = 0; i < 1; ++i)
             {
                threads.push_back(std::thread (&connection::connect_client,this,i));
-
+               threads[i].join();
             }
+             t1.join();
+            t2.join();
             cout<<"connetion initiated\n";
 
         }
