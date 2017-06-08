@@ -10,6 +10,8 @@
 #include<vector>
 #include<fstream>
 #include<thread>
+#include "block.cpp"
+#define peers 2
 using namespace std;
 class Ser{
 	public:
@@ -176,7 +178,7 @@ class connection{
             x=stoi(t);
             cout<<"server <created> : "<<x<<endl;
             server.link_my_socket(x);
-            for (int i = 0; i < 1; ++i)
+            for (int i = 0; i < peers; ++i)
             { 
                 int x=server.connect();
                 sockets.push_back(x);
@@ -191,7 +193,7 @@ class connection{
             fstream s("neighbours.txt");
             string t;
             
-            for (int i = 0; i < 1; ++i)
+            for (int i = 0; i < peers; ++i)
             {
                 cli c;
                 s>>t;
@@ -212,17 +214,22 @@ class connection{
            // sleep(1);
             std::thread t2(&connection::init_c,this);
            
-            sleep(2);
-            cout<<"hi"<<endl;
+            sleep(10);
+            cout<<"sleep_done"<<endl;
             std::vector<thread> threads;
-            for (int i = 0; i < 1; ++i)
+            for (int i = 0; i < peers; ++i)
             {
                threads.push_back(std::thread (&connection::connect_client,this,i));
-               threads[i].join();
+              // threads[i].join();
             }
              t1.join();
             t2.join();
             cout<<"connetion initiated\n";
+
+            for (int i = 0; i < peers; ++i)
+            {
+               threads[i].join();
+            }
 
         }
 
@@ -230,13 +237,41 @@ class connection{
         {
             
             clients[i].Connect();
+            cout<<"client "<<i<<" connected"<<endl;
+            
         }
 
-};
+        void broadcast(string msg)
+        {
+            for (int i = 0; i < peers; ++i)
+            {
+                server.snd(msg,sockets[i]);
+            }
+        }
 
+
+};
+connection a;
+void run_client(int i)
+{
+    string str=a.clients[i].rcv();
+    cout<<str<<endl;
+
+}
 
 int main(int argc, char const *argv[])
 {
-    connection a;
+    
     a.initiate_connection();
+    cout<<"complete connection"<<endl;
+    std::vector<thread> threads;
+    a.broadcast("I am base\n");
+    for (int i = 0; i < peers; ++i)
+    {
+        threads.push_back(std::thread(&run_client,i));
+    }
+    for (int i = 0; i < peers; ++i)
+    {
+        threads[i].join();
+    }
 }
