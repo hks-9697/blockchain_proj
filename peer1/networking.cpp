@@ -7,7 +7,9 @@
 #include<arpa/inet.h>
 #include<stdlib.h>
 #include<iostream>
-#include<vector>
+#include<bits/stdc++.h>
+#include <boost/algorithm/string/predicate.hpp>
+#include <boost/lexical_cast.hpp>
 #include<fstream>
 #include<thread>
 #include "block.cpp"
@@ -164,6 +166,10 @@ class connection{
 		Ser server;
 		std::vector<cli> clients;
         std::vector<int> sockets;
+        std::unordered_map<string,string> received_broadcasts;
+        const string reply_keyword="reply:";
+        const string query_keyword="query:";
+        const string mine_keyword="mine:";
 		connection()
 		{
 			size=0;
@@ -220,7 +226,7 @@ class connection{
             for (int i = 0; i < peers; ++i)
             {
                threads.push_back(std::thread (&connection::connect_client,this,i));
-              // threads[i].join();
+              
             }
              t1.join();
             t2.join();
@@ -252,26 +258,63 @@ class connection{
 
 };
 connection a;
+block_chain my_chain;
+int stop;
+
+void miner(string data)
+{
+    my_chain.add_transaction(data);
+    // std::thread t1(&block_chain::add_transaction,&my_chain,data);
+    // t1.detach();
+    cout<<"mined:"<<my_chain.chain[my_chain.size-1].hash<<endl;
+}
 void run_client(int i)
 {
-    string str=a.clients[i].rcv();
-    cout<<str<<endl;
-
+	while(1)
+	{
+    		string str=a.clients[i].rcv();
+            
+            if(!str.compare(0,a.mine_keyword.size(),a.mine_keyword))
+            {
+                miner(str.substr(5));
+            }
+    		
+    }
+    	
 }
+
+    
 
 int main(int argc, char const *argv[])
 {
-    
+       
     a.initiate_connection();
     cout<<"complete connection"<<endl;
-    std::vector<thread> threads;
-    a.broadcast("I am base\n");
+    std::vector<thread> client_threads;
+    
     for (int i = 0; i < peers; ++i)
     {
-        threads.push_back(std::thread(&run_client,i));
+        client_threads.push_back(std::thread(&run_client,i));
     }
+    int select;
+    while(1)
+    {
+        cout<<"1.john,2.asdf"<<endl;
+        cin>>select;
+        switch(select)
+        {
+            case 1:a.broadcast(a.mine_keyword+"john");miner("john");break;
+            case 2:a.broadcast(a.mine_keyword+"asdf");miner("asdf");break;
+            
+
+        }
+    }
+
+
+    
+    
     for (int i = 0; i < peers; ++i)
     {
-        threads[i].join();
+        client_threads[i].join();
     }
 }

@@ -7,9 +7,7 @@
 #include<arpa/inet.h>
 #include<stdlib.h>
 #include<iostream>
-#include<bits/stdc++.h>
-#include <boost/algorithm/string/predicate.hpp>
-#include <boost/lexical_cast.hpp>
+#include<vector>
 #include<fstream>
 #include<thread>
 #include "block.cpp"
@@ -166,10 +164,6 @@ class connection{
 		Ser server;
 		std::vector<cli> clients;
         std::vector<int> sockets;
-        std::unordered_map<string,string> received_broadcasts;
-        const string reply_keyword="reply:";
-        const string query_keyword="query:";
-        const string mine_keyword="mine:";
 		connection()
 		{
 			size=0;
@@ -226,7 +220,7 @@ class connection{
             for (int i = 0; i < peers; ++i)
             {
                threads.push_back(std::thread (&connection::connect_client,this,i));
-              
+              // threads[i].join();
             }
              t1.join();
             t2.join();
@@ -260,26 +254,75 @@ class connection{
 connection a;
 block_chain my_chain;
 int stop;
-
-void miner(string data)
+std::deque<thread> miners;
+int chain_size;
+void new_miner(string data)
 {
+
     my_chain.add_transaction(data);
-   //  std::thread t1(&block_chain::add_transaction,&my_chain,data);
-   //  t1.detach();
-    cout<<"mined:"<<my_chain.chain[my_chain.size-1].hash<<endl;
+    if(stop==1)
+    {
+        my_chain.size--;
+        return;
+    }
+    /*
+    a.broadcast("stop");
+    sleep(1);
+    a.broadcast(my_chain.chain[my_chain.size-1].nonce);
+    sleep(1);
+    a.broadcast(my_chain.chain[my_chain.size-1].data);
+    sleep(1);
+    a.broadcast(my_chain.chain[my_chain.size-1].prev);
+    sleep(1);
+    a.broadcast(my_chain.chain[my_chain.size-1].hash);
+    sleep(1);
+    */
+    cout<<"block mined :"<<my_chain.chain[my_chain.size-1].hash<<endl;
+
 }
 void run_client(int i)
 {
 	while(1)
 	{
     		string str=a.clients[i].rcv();
+            cout<<"start:"<<str<<endl;
+            int k;
             
-            if(!str.compare(0,a.mine_keyword.size(),a.mine_keyword))
-            {
-                miner(str.substr(5));
-            }
+    		      if(str=="mine")
+    				{stop=0;
+                    string str1=a.clients[i].rcv();
+    				//string str2=a.clients[i].rcv();
+    				chain_size=my_chain.get_size();
+                    if(str1=="stop")
+                    {
+                        
+                    }
+                    else
+                    {
+    				    miners.push_back(std::thread(&new_miner,str1));
+                    }
+                }
+                
+                else if(str=="stop")
+                {   stop=1;
+                    //std::terminate(miners[0]);
+                     miners.front().detach();
+                    miners.pop_front();
+                //    my_chain.size=chain_size;
+                    string str3=a.clients[i].rcv();
+                    
+                    string str4=a.clients[i].rcv();
+                    
+                    string str5=a.clients[i].rcv();
+                    
+                    string str6=a.clients[i].rcv();
+                   // sleep(1);
+                    my_chain.add_block(str3,str4,str5,str6);
+                    cout<<"block added :"<<my_chain.chain[my_chain.size-1].hash<<endl;
+                }
+            
     		
-    }
+    	}
     	
 }
 
@@ -290,31 +333,22 @@ int main(int argc, char const *argv[])
        
     a.initiate_connection();
     cout<<"complete connection"<<endl;
-    std::vector<thread> client_threads;
-    
+    std::vector<thread> threads;
+    //a.broadcast("I am base\n");
     for (int i = 0; i < peers; ++i)
     {
-        client_threads.push_back(std::thread(&run_client,i));
+        threads.push_back(std::thread(&run_client,i));
     }
-    int select;
-    while(1)
-    {
-        cout<<"1.john,2.asdf"<<endl;
-        cin>>select;
-        switch(select)
-        {
-            case 1:a.broadcast(a.mine_keyword+"john");miner("john");break;
-            case 2:a.broadcast(a.mine_keyword+"asdf");miner("asdf");break;
-            
-
-        }
-    }
-
-
+    cout<<"run"<<endl;
+    int x;
     
-    
+  //  a.broadcast("mine");
+    sleep(1);
+   // a.broadcast("data");
+   // cout<<"broadcast done"<<endl;
+   // new_miner("data");
     for (int i = 0; i < peers; ++i)
     {
-        client_threads[i].join();
+        threads[i].join();
     }
 }

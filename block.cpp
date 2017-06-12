@@ -109,22 +109,37 @@ class block_chain{
 		blk.prev=prev;
 		blk.hash=hash;
 		stringstream ss;
+		cout<<data;
 		ss << size+1;
 		string n=ss.str();
 		if(size!=0)
 		{
 		if(hash==sha256(n+nonce+data+prev)&&chain[size-1].hash==prev)
 		{
+			if(size<=chain.size())
+			{
 			size++;
 			chain.push_back(blk);
+			}
+			else
+			{
+				chain[size++]=blk;
+			}
 		}
 	}
 	else
 	{
 		if(hash==sha256(n+nonce+data+prev)&&"0000000000000000000000000000000000000000000000000000000000000000"==prev)
 		{
+			if(size<=chain.size())
+			{
 			size++;
 			chain.push_back(blk);
+			}
+			else
+			{
+				chain[size++]=blk;
+			}
 		}
 	}
 	}
